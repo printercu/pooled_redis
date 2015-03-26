@@ -30,7 +30,6 @@ module PooledRedis
   def redis_config
     @redis_config = begin
       config = ActiveRecord::Base.connection_config[:redis].with_indifferent_access
-      config[:driver] ||= :hiredis if defined?(Hiredis)
       config[:logger] = Rails.logger if config.delete(:debug)
       config
     end
@@ -49,6 +48,30 @@ module PooledRedis
 
   def redis
     @redis ||= redis_pool.simple_connection
+  end
+
+  class << self
+    def setup_rails_cache(app)
+      # We need to use initializer to be able to access
+      # Rails.configuration.database_configuration.
+      app.initializer :configure_cache, before: :initialize_cache, group: :all do
+        cache_config = Rails.configuration.
+          database_configuration[Rails.env]['cache'].try!(:with_indifferent_access)
+        adapter = cache_config.try!(:delete, :adapter).try!(:to_sym)
+        break unless adapter
+        if adapter == :redis_store
+          # Workaround to support `:db` option:
+          pool_config ||= {
+            pool:     cache_config.delete(:pool)    || 5,
+            timeout:  cache_config.delete(:timeout) || 5,
+          }
+          cache_config = {
+            pool: ConnectionPool.new(pool_config) { Redis::Store.new(cache_config) }
+          }
+        end
+        app.config.cache_store = adapter, cache_config
+      end
+    end
   end
 end
 

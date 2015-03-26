@@ -30,11 +30,48 @@ production:
 ```
 
 - You can also provide `pool` & `timeout` values for ConnectionPool.
+- Use `debug: true` to set redis logger to `Rails.logger`.
 - Use `Rails.redis_pool` & `Rails.redis` method.
 
 PooledRedis uses ConnectionPool for pooling connections.
 `.redis` returns proxy object that checkouts connection for every method call.
 So you may want to avoid it for bulk operations.
+
+### Rails.cache configuration & Redis::Store support
+PooledRedis provides configuration of `Rails.cache` via `database.yml`.
+To enable this add following to your `config/application.rb` (inside `Application` class):
+
+```ruby
+PooledRedis.setup_rails_cache(self)
+```
+
+And cache sections to `database.yml`:
+
+```yml
+development:
+  cache:
+    adapter: redis_store
+    db: 3
+    expires_in: 3600
+
+production:
+  cache:
+    adapter: redis_store
+    url: 'redis://mycachemaster'
+    sentinels:
+      - host: host
+      - host: other
+
+# You can also use other adapters:
+test:
+  cache:
+    adapter: null_store
+```
+
+You need to add `gem 'redis-activesupport'` to your Gemfile.
+It supports only new version of `Redis::Store` with support of ConnectionPool
+(currently it's only available in master:
+`gem 'redis-activesupport', '~> 4.0.0', github: 'redis-store/redis-activesupport', ref: 'd09ae04'`).
 
 ### Custom modules or without rails
 
