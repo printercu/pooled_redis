@@ -31,7 +31,7 @@ module PooledRedis
     @redis_config = begin
       config = ActiveRecord::Base.connection_config[:redis].with_indifferent_access
       config[:driver] ||= :hiredis if defined?(Hiredis)
-      config[:logger] = Rails.logger if Rails.env.development?
+      config[:logger] = Rails.logger if config.delete(:debug)
       config
     end
   end
