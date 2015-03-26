@@ -58,7 +58,7 @@ module PooledRedis
         cache_config = Rails.configuration.
           database_configuration[Rails.env]['cache'].try!(:with_indifferent_access)
         adapter = cache_config.try!(:delete, :adapter).try!(:to_sym)
-        break unless adapter
+        next unless adapter
         if adapter == :redis_store
           # Workaround to support `:db` option:
           pool_config ||= {
