@@ -1,6 +1,15 @@
 require 'pooled_redis/version'
 require 'connection_pool'
 
+# If someone added hiredis to Gemfile, I hope he want to use it.
+# This makes all Redis.new use hiredis.
+if defined?(Hiredis)
+  begin
+    require 'redis/connection/hiredis'
+  rescue LoadError
+  end
+end
+
 ConnectionPool.class_eval do
   # Wraps pool and proxies every method to checked out connection.
   # Similar to Wrapper, but works on existing pool.
@@ -26,31 +35,11 @@ ConnectionPool.class_eval do
 end
 
 module PooledRedis
-  # Override this method unless using Rails.
-  def redis_config
-    @redis_config = begin
-      config = ActiveRecord::Base.connection_config[:redis].with_indifferent_access
-      config[:logger] = Rails.logger if config.delete(:debug)
-      config
-    end
-  end
-
-  def redis_pool_config
-    @redis_pool_config ||= {
-      pool:     redis_config.delete(:pool)    || 5,
-      timeout:  redis_config.delete(:timeout) || 5,
-    }
-  end
-
-  def redis_pool
-    @redis_pool ||= ConnectionPool.new(redis_pool_config) { Redis.new(redis_config) }
-  end
-
-  def redis
-    @redis ||= redis_pool.simple_connection
-  end
-
   class << self
+    def extend_rails
+      Rails.class_eval { extend PooledRedis } if defined?(Rails)
+    end
+
     def setup_rails_cache(app)
       # We need to use initializer to be able to access
       # Rails.configuration.database_configuration.
@@ -73,7 +62,40 @@ module PooledRedis
       end
     end
   end
+
+  # Override this method unless using Rails.
+  def redis_config
+    @redis_config ||= begin
+      config = ActiveRecord::Base.connection_config[:redis].with_indifferent_access
+      config[:logger] = Rails.logger if config.delete(:debug)
+      require 'redis/namespace' if config[:namespace]
+      config
+    end
+  end
+
+  def redis_pool_config
+    @redis_pool_config ||= {
+      pool:     redis_config.delete(:pool)    || 5,
+      timeout:  redis_config.delete(:timeout) || 5,
+    }
+  end
+
+  def redis_pool
+    @redis_pool ||= begin
+      block = if redis_config[:block]
+        redis_config[:block]
+      elsif redis_config[:namespace]
+        -> { Redis::Namespace.new(redis_config[:namespace], redis_config) }
+      else
+        -> { Redis.new(redis_config) }
+      end
+      ConnectionPool.new(redis_pool_config, &block)
+    end
+  end
+
+  def redis
+    @redis ||= redis_pool.simple_connection
+  end
 end
 
-# Use Rails module methods to access redis client.
-Rails.class_eval { extend PooledRedis } if defined?(Rails)
+PooledRedis.extend_rails

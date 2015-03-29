@@ -22,4 +22,10 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency 'bundler', '~> 1.7'
   spec.add_development_dependency 'rake', '~> 10.0'
+  spec.add_development_dependency 'rspec', '~> 3.1.0'
+  spec.add_development_dependency 'rspec-its', '~> 1.2.0'
+  spec.add_development_dependency 'redis-namespace', '~> 1.5.1'
+  if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ruby'
+    spec.add_development_dependency 'hiredis', '~> 0.6.0'
+  end
 end

@@ -1,5 +1,8 @@
 # PooledRedis
 
+[![Gem Version](https://badge.fury.io/rb/pooled_redis.svg)](http://badge.fury.io/rb/pooled_redis)
+[![Build Status](https://travis-ci.org/printercu/pooled_redis.svg)](https://travis-ci.org/printercu/pooled_redis)
+
 Simple way to access redis connections without global variables.
 
 Provides `Rails.redis_pool` & `Rails.redis` methods and configuration via `database.yml`.
@@ -31,6 +34,8 @@ production:
 
 - You can also provide `pool` & `timeout` values for ConnectionPool.
 - Use `debug: true` to set redis logger to `Rails.logger`.
+- Pass `namespace` if you want to use
+  [redis-namespace](https://github.com/resque/redis-namespace).
 - Use `Rails.redis_pool` & `Rails.redis` method.
 
 PooledRedis uses ConnectionPool for pooling connections.
@@ -99,6 +104,11 @@ end
 Storage.redis_pool.with { |r| r.get :some_key }
 Storage.redis.get :some_key
 ```
+
+### Advanced usage
+
+You can return hash containing `:block` from `redis_config`. This block
+will be used as a block to instantiate connection in ConnectionPool.
 
 # Licence
 
