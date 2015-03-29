@@ -85,7 +85,7 @@ module PooledRedis
       block = if redis_config[:block]
         redis_config[:block]
       elsif redis_config[:namespace]
-        -> { Redis::Namespace.new(redis_config[:namespace], redis_config) }
+        -> { Redis::Namespace.new(redis_config[:namespace], redis: Redis.new(redis_config)) }
       else
         -> { Redis.new(redis_config) }
       end
