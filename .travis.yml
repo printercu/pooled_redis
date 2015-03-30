@@ -1,9 +1,8 @@
 language: ruby
 cache: bundler
 rvm:
-  - '2.0'
-  - ruby-head
-  - jruby-head
-  - rbx-2
+  - 2.2.0
+  - jruby-21mode
+  - rbx-2.5.2
 notifications:
   email: false

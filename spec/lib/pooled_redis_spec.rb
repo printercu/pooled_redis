@@ -28,6 +28,12 @@ RSpec.describe PooledRedis do
     end
 
     context 'when config contains :namespace' do
+      before do
+        # Redis::Namespace must not use Redis.current
+        expect(Redis).to_not receive(:current)
+        expect(Redis).to receive(:new).and_call_original
+      end
+
       let(:redis_config) { {namespace: 'test_ns'} }
       its('checkout.class') { should be Redis::Namespace }
       its('checkout.namespace') { should eq 'test_ns' }
